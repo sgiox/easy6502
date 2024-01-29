@@ -31,6 +31,10 @@
   float: left;
 }
 
+.highlighted {
+  background: lightgreen;
+}
+
 .screen {
   float: right;
 }

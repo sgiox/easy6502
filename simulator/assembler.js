@@ -1674,6 +1674,7 @@ function SimulatorWidget(node) {
       }
       $node.find('.minidebugger').html(html);
       updateMonitor();
+      assembler.highlightInstruction(regPC);
     }
 
     // gotoAddr() - Set PC to address (or address of label)
@@ -1733,6 +1734,10 @@ function SimulatorWidget(node) {
       monitoring = state;
     }
 
+    function getCurrentPC() {
+      return regPC;
+    }
+
     return {
       runBinary: runBinary,
       enableDebugger: enableDebugger,
@@ -1744,6 +1749,7 @@ function SimulatorWidget(node) {
       toggleMonitor: toggleMonitor,
       handleMonitorRangeChange: handleMonitorRangeChange,
       updateMonitor: updateMonitor,
+      getCurrentPC: getCurrentPC,
     };
   }
 
@@ -1856,6 +1862,7 @@ function SimulatorWidget(node) {
     var codeLen;
     var codeAssembledOK = false;
     var wasOutOfRangeBranch = false;
+    var disasmPopup = null;
 
     var Opcodes = [
       /* Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA */
@@ -2491,6 +2498,7 @@ function SimulatorWidget(node) {
       html += "</code></pre></body></html>";
       w.document.write(html);
       w.document.close();
+      return w;
     }
 
     // Dump binary as hex to new window
@@ -2678,6 +2686,8 @@ function SimulatorWidget(node) {
       var byte;
       var modeAndCode;
 
+      var instHtml = "";
+
       while (currentAddress < endAddress) {
         inst = createInstruction(currentAddress);
         byte = memory.get(currentAddress);
@@ -2687,6 +2697,7 @@ function SimulatorWidget(node) {
         length = instructionLength[modeAndCode.mode];
         inst.setModeAndCode(modeAndCode);
 
+        var baseAddress = currentAddress;
         for (var i = 1; i < length; i++) {
           currentAddress++;
           byte = memory.get(currentAddress);
@@ -2694,13 +2705,31 @@ function SimulatorWidget(node) {
           inst.addArg(byte);
         }
         instructions.push(inst);
+        instHtml += "<div id='L" + addr2hex(baseAddress) + "'>" + inst + '</div>';
         currentAddress++;
       }
 
       var html = 'Address  Hexdump   Dissassembly\n';
       html +=    '-------------------------------\n';
-      html += instructions.join('\n');
-      openPopup(html, 'Disassembly');
+      html += instHtml;
+      disasmPopup = openPopup(html, 'Disassembly');
+      highlightInstruction(simulator.getCurrentPC());
+    }
+
+    function highlightInstruction(address) {   
+      if (disasmPopup)
+      {
+        var divId = 'L' + addr2hex(address);
+        var line = $(disasmPopup.document).find('code #'+divId);
+        
+        // Remove any previous highlight
+        $(disasmPopup.document).find('code .highlighted').removeClass('highlighted');
+
+        if (line)
+        {
+          line.addClass('highlighted');
+        }
+      }
     }
 
     return {
@@ -2711,7 +2740,8 @@ function SimulatorWidget(node) {
       },
       hexdump: hexdump,
       disassemble: disassemble,
-      patch: patch
+      patch: patch,
+      highlightInstruction: highlightInstruction
     };
   }
 
