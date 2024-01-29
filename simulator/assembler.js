@@ -20,6 +20,36 @@ function SimulatorWidget(node) {
   var simulator = Simulator();
   var assembler = Assembler();
 
+  function isNumber(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+  }
+
+  function parseHex(str) {
+    var result = [];
+
+    str = str.replace(/\s/g, '');
+
+    if (str.length % 2 != 0) {
+      message("Invalid hex length");
+      return result;
+    }
+
+    while (str.length >= 2) {
+      var num = parseInt(str.substring(0, 2), 16);
+
+      if (!isNumber(num)) {
+        message("Hex parsing error");
+        return [];
+      }
+
+      result.push(num);
+
+      str = str.substring(2, str.length);
+    }
+
+    return result;
+  }
+
   function initialize() {
     stripText();
     ui.initialize();
@@ -34,6 +64,8 @@ function SimulatorWidget(node) {
     $node.find('.resetButton').click(simulator.reset);
     $node.find('.hexdumpButton').click(assembler.hexdump);
     $node.find('.disassembleButton').click(assembler.disassemble);
+    $node.find('.patchButton').click(assembler.patch);
+
     $node.find('.debug').change(function () {
       var debug = $(this).is(':checked');
       if (debug) {
@@ -1695,7 +1727,6 @@ function SimulatorWidget(node) {
     function stop() {
       codeRunning = false;
       clearInterval(executeId);
-      message("\nStopped\n");
     }
 
     function toggleMonitor (state) {
@@ -1711,7 +1742,8 @@ function SimulatorWidget(node) {
       reset: reset,
       stop: stop,
       toggleMonitor: toggleMonitor,
-      handleMonitorRangeChange: handleMonitorRangeChange
+      handleMonitorRangeChange: handleMonitorRangeChange,
+      updateMonitor: updateMonitor,
     };
   }
 
@@ -2595,6 +2627,47 @@ function SimulatorWidget(node) {
       };
     }
 
+    function patch() {
+      var str = prompt("Patch memory\n\nSyntax -> addr: xx xx xx xx", "");
+
+      if (str == null)
+      {
+        return;
+      }
+
+      // Format 0000: 00 00 00 00 ...
+      var parts = str.split(':');
+
+      if (parts.length != 2)
+      {
+        message('Invalid format');
+        return;
+      }
+
+      var addr = parseInt(parts[0], 16);
+      var data = parseHex(parts[1]);
+
+      if (!isNumber(addr) || addr < 0 || addr > 0xFFFF)
+      {
+        message("Invalid address");
+        return;
+      }
+
+      if (data.length < 1)
+      {
+        return;
+      }
+
+      for (var i=0; i<data.length; i++)
+      {
+        memory.storeByte(addr+i, data[i]);
+      }
+
+      message("Patched " + data.length.toString() + " byte(s)")
+
+      simulator.updateMonitor();
+    }
+
     function disassemble() {
       var startAddress = 0x600;
       var currentAddress = startAddress;
@@ -2637,7 +2710,8 @@ function SimulatorWidget(node) {
         return defaultCodePC;
       },
       hexdump: hexdump,
-      disassemble: disassemble
+      disassemble: disassemble,
+      patch: patch
     };
   }
 
