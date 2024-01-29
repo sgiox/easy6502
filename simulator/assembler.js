@@ -2485,8 +2485,11 @@ function SimulatorWidget(node) {
       pushByte((value >> 8) & 0xff);
     }
 
-    function openPopup(content, title) {
-      var w = window.open('', title, 'width=500,height=300,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
+    function openPopup(content, title, w=null) {
+      if (w == null || w.closed)
+      {
+        w = window.open('', title, 'width=500,height=300,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
+      }
 
       var html = "<html><head>";
       html += "<link href='style.css' rel='stylesheet' type='text/css' />";
@@ -2712,7 +2715,7 @@ function SimulatorWidget(node) {
       var html = 'Address  Hexdump   Dissassembly\n';
       html +=    '-------------------------------\n';
       html += instHtml;
-      disasmPopup = openPopup(html, 'Disassembly');
+      disasmPopup = openPopup(html, 'Disassembly', disasmPopup);
       highlightInstruction(simulator.getCurrentPC());
     }
 
