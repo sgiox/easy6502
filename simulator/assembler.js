@@ -1863,6 +1863,7 @@ function SimulatorWidget(node) {
     var codeAssembledOK = false;
     var wasOutOfRangeBranch = false;
     var disasmPopup = null;
+    var lastPatchPrompt = "";
 
     var Opcodes = [
       /* Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA */
@@ -2639,12 +2640,16 @@ function SimulatorWidget(node) {
     }
 
     function patch() {
-      var str = prompt("Patch memory\n\nSyntax -> addr: xx xx xx xx", "");
-
+      
+      var str = prompt("Patch memory\n\nSyntax -> addr: xx xx xx xx", lastPatchPrompt);
+      
       if (str == null)
       {
+        lastPatchPrompt = "";
         return;
       }
+
+      lastPatchPrompt = str;
 
       // Format 0000: 00 00 00 00 ...
       var parts = str.split(':');
